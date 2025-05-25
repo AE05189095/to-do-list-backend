@@ -1,3 +1,6 @@
+require('dotenv').config();
+const mongoose = require('mongoose');
+
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -11,6 +14,13 @@ var usersGoals = require('./routes/goals');
 
 var app = express();
 
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('Conectado a MongoDB'))
+.catch((error) => console.error('Error conectando a MongoDB:', error));
+
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
@@ -22,7 +32,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use((req, res, next) => {
   const apiKey = req.headers['x-api-key'];
-  if (apiKey && apiKey === '123456') {
+  if (apiKey && apiKey === process.env.API_KEY) {
     next();
   } else {
     return res.status(401).json({ error: 'API key incorrecta o ausente' });

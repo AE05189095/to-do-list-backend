@@ -1,40 +1,49 @@
 var express = require('express');
 var router = express.Router();
+const Task = require('../models/Tasks'); 
+console.log('Task es:', Task);
 
-let tasks = [];
-
-router.get('/getTasks', function (req, res) {
-  res.status(200).json(tasks);
+router.get('/getTasks', async function (req, res) {
+  try {
+    const tasks = await Task.find();
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener tareas' });
+  }
 });
 
-router.post('/addTask', function (req, res) {
-  const { name, description, dueDate } = req.body;
+router.post('/addTask', async function (req, res) {
+  const { title, description, dueDate } = req.body;
 
-  if (!name || !description || !dueDate) {
+  if (!title || !dueDate) {
     return res.status(400).json({ error: 'Faltan parámetros requeridos' });
   }
 
-  let timestamp = Date.now() + Math.random();
-  req.body.id = timestamp.toString();
-  tasks.push(req.body);
-
-  res.status(200).json({ mensaje: 'Tarea agregada correctamente', tasks });
+  try {
+    const task = new Task({
+      title,
+      description,
+      dueDate,
+    });
+    const savedTask = await task.save();
+    res.status(201).json({ mensaje: 'Tarea agregada correctamente', task: savedTask });
+  } catch (error) {
+    console.error('Error guardando tarea:', error);
+    res.status(500).json({ error: 'Error al guardar la tarea' });
+  }
 });
 
-router.delete('/removeTask/:id', function (req, res) {
+router.delete('/removeTask/:id', async function (req, res) {
   const id = req.params.id;
-  if (!id) {
-    return res.status(400).json({ error: 'ID inválido' });
+  try {
+    const removedTask = await Task.findByIdAndDelete(id);
+    if (!removedTask) {
+      return res.status(404).json({ error: 'No se encontró la tarea para eliminar' });
+    }
+    res.status(200).json({ mensaje: 'Tarea eliminada correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar la tarea' });
   }
-
-  const initialLength = tasks.length;
-  tasks = tasks.filter(task => task.id !== id);
-
-  if (tasks.length === initialLength) {
-    return res.status(400).json({ error: 'No se encontró la tarea para eliminar' });
-  }
-
-  res.status(200).json({ mensaje: 'Tarea eliminada correctamente', tasks });
 });
 
 module.exports = router;

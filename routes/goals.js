@@ -1,40 +1,47 @@
 var express = require('express');
 var router = express.Router();
+const Goal = require('../models/Goals');
 
-let goals = [];
-
-router.get('/getGoals', function (req, res) {
-  res.status(200).json(goals);
+router.get('/getGoals', async function (req, res) {
+  try {
+    const goals = await Goal.find();
+    res.status(200).json(goals);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener metas' });
+  }
 });
 
-router.post('/addGoal', function (req, res) {
-  const { name, description, dueDate } = req.body;
+router.post('/addGoal', async function (req, res) {
+  const { title, description, dueDate } = req.body;
 
-  if (!name || !description || !dueDate) {
+  if (!title || !dueDate) {
     return res.status(400).json({ error: 'Faltan parámetros requeridos' });
   }
 
-  let timestamp = Date.now() + Math.random();
-  req.body.id = timestamp.toString();
-  goals.push(req.body);
-
-  res.status(200).json({ mensaje: 'Meta agregada correctamente', goals });
+  try {
+    const goal = new Goal({
+      title,
+      description,
+      dueDate,
+    });
+    const savedGoal = await goal.save();
+    res.status(201).json({ mensaje: 'Meta agregada correctamente', goal: savedGoal });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al guardar la meta' });
+  }
 });
 
-router.delete('/removeGoal/:id', function (req, res) {
+router.delete('/removeGoal/:id', async function (req, res) {
   const id = req.params.id;
-  if (!id) {
-    return res.status(400).json({ error: 'ID inválido' });
+  try {
+    const removedGoal = await Goal.findByIdAndDelete(id);
+    if (!removedGoal) {
+      return res.status(404).json({ error: 'No se encontró la meta para eliminar' });
+    }
+    res.status(200).json({ mensaje: 'Meta eliminada correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar la meta' });
   }
-
-  const initialLength = goals.length;
-  goals = goals.filter(goal => goal.id !== id);
-
-  if (goals.length === initialLength) {
-    return res.status(400).json({ error: 'No se encontró la meta para eliminar' });
-  }
-
-  res.status(200).json({ mensaje: 'Meta eliminada correctamente', goals });
 });
 
 module.exports = router;
