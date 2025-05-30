@@ -6,4 +6,4 @@ const GoalSchema = new mongoose.Schema({
   dueDate: { type: Date, required: true },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Goal', GoalSchema);
+module.exports = mongoose.model('Goals', GoalSchema); 
